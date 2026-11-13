@@ -1,0 +1,13 @@
+*.o
+*.out
+*.a
+*.tar
+*.tar.gz
+*.zip
+*Zone.Identifier
+raw_timings.csv
+summary*.csv
+ncu_output/
+results-*.txt
+.out_*
+.err_*

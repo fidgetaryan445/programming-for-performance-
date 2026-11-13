@@ -1,0 +1,110 @@
+Cache size = 32*1024 words 
+Line size = 8 words = BL 
+N = 512  
+# of lines = 32/4*1024 = 4096 lines
+# of lines per row of matrix = 512/8 = 64 
+# of lines in entire matrix = 64*512 = 32768
+# of sets in 4 way cache : 4096/4 = 1024
+repeation in cache after 1024 blocks = 1024*8 words,
+# rows that could be continously stored in 4 way cache = 1024*8/512 = 16 
+
+
+conclusion -> Cache is smaller than matrix 
+
+
+
+kij loop  :
+for(k = 0 ; k < N ; k++){
+    for(i = 0 ; i < N ; i++){
+        r = A[i][k];
+        for(j = 0 ; j < N ; j++){
+            C[i][j] += r*B[k][j];
+          }
+      }
+  }
+
+
+1)Fully assoicaitve cache : 
+
+-> Matrix A:
+index i : N    (column major access) 
+index j : 1    (single element of A fethced is continuously used) 
+index k : N/BL (on each of the column major access a lone of A[i][k] to A[i][k+BL-1] will be present in cache and would remain there due to full assoicaitve nature) 
+
+->Matrix B:
+index i : 1 (entire row is fetched)
+index j : N/BL  (after a B[k][j] cache block is fethced , we encounter cache misses till B[k][j+BL-1])
+index k : N (this row-fetch pattern repeats once per k value)
+
+->Matrix C:
+index i : N (with each i a new row is accessed leading to a fresh miss)
+index j : N/BL (fetching of a block in normal row access)
+index k : N (entire access pattern repeats for C but as cache is smaller than matrix k contributes N)
+
+
+2)4-way assoicaitve cache :
+-> Matrix A:
+index i : N (column major access)
+index j : 1 (single element fetched stays constant with respect to j)
+index k : N (1024 sets are availble that means, A[0][k] to A[0][k+BL-1] and A[16][k] to A[16][k+BL-1] goes in same set, set is 4 associative to A[64][k] block on being fetched displaces the A[0][k] one hence for every k everytime new block will be fetched)
+
+-> Matrix B:
+index i : 1 (entire row is fetching)
+index j : N/BL (row major access with BL block size fetching)
+index k : N (column major access)
+
+-> Matrix C:
+index i : N (with each i a new row is accessed leading to a fresh miss)
+index j : N/BL (row major access with 1 miss per new block fethced)
+index k : N (entire pattern repeats)
+
+
+
+jki loop  :
+for(j = 0 ; j < N ; j++){
+    for(k = 0 ; k < N ; k++){
+        r = B[k][j];
+        for(i = 0 ; i < N ; i++){
+            C[i][j] += A[i][k]*r;
+          }
+      }
+  }
+
+
+1)Fully assoicaitve cache :
+
+-> Matrix A:
+index i : N (column major access)
+index j : N (entire pattern repeats N times) 
+index k : N/BL (reuse across nearby k in the same BL-group — same lines already brought in by the i-sweep, retained due to full-associative capacity)
+
+-> Matrix B:
+index i : 1 (accessed outside this loop)
+index j : N/BL (reuse across nearby j in the same BL-group — previous column-sweep's lines still resident)
+index k : N (column major access)
+
+-> Matrix C:
+index i : N (column major access)
+index j : N/BL (reuse across nearby j in the same BL-group — lines from the previous column-sweep still resident)
+index k : 1 (cache already fetched)
+
+
+2)4-way assoicaitve cache :
+
+-> Matrix A:
+index i :N  
+index j :N
+index k :N(when 64th row is fetched the 0th row is evicted leading to no cache hits for sucessive k)
+
+-> Matrix B:
+index i : 1 
+index j : N(similar 4 way eviction logic)
+index k : N 
+
+-> Matrix C:
+index i : N
+index j : N (due to eviction of 4 way set)
+index k : N (due to eviction of 4 way set)
+
+
+
